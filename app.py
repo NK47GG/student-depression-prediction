@@ -23,7 +23,7 @@ st.set_page_config(
 # ── Load model ─────────────────────────────────────────────
 @st.cache_resource
 def load_model():
-    artifact = joblib.load("model_depresi_final.pkl")
+    artifact = joblib.load("model_depresi_terbaik.pkl")
     return artifact
 
 try:
