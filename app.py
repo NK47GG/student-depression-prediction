@@ -34,7 +34,6 @@ except Exception as e:
     st.error(f"❌ Terjadi kesalahan saat memuat model: {e}")
     st.stop()
 
-
 # ── Fungsi confidence level ─────────────────────────────────
 def get_confidence(prob: float) -> str:
     if prob >= 0.75:
@@ -47,7 +46,6 @@ def get_confidence(prob: float) -> str:
         return "Sedang — Tidak Depresi"
     else:
         return "Tinggi — Tidak Depresi"
-
 
 # ── UI ─────────────────────────────────────────────────────
 st.title("🧠 Prediksi Risiko Depresi")
@@ -87,33 +85,31 @@ if st.button("🔍 Prediksi Sekarang", type="primary", use_container_width=True)
     # ── Siapkan input DataFrame ───────────────────────────
     cgpa_val = np.nan if cgpa == 0.0 else cgpa
     
-    # Asumsi dari kode sebelumnya: Jika Student, Work Pressure & Job Sat disamakan dengan Academics
-    work_pressure_val = acad_pressure if profession == "Working Professional" else 0.0
-    job_sat_val = study_sat if profession == "Working Professional" else 0.0
+    # Feature engineering disamakan kembali dengan racikan asli Anda di Colab
+    pressure          = acad_pressure + 0          
+    role_satisfaction = study_sat + 0             
 
-    # PENTING: Nama dictionary keys HARUS SAMA PERSIS dengan kolom saat training!
     input_data = pd.DataFrame([{
         "Age"                                    : age,
         "Gender"                                 : gender,
         "City"                                   : city,
         "Profession"                             : profession,
         "Academic Pressure"                      : float(acad_pressure),
-        "Work Pressure"                          : float(work_pressure_val), 
         "CGPA"                                   : cgpa_val,
         "Study Satisfaction"                     : float(study_sat),
-        "Job Satisfaction"                       : float(job_sat_val),
         "Sleep Duration"                         : sleep_dur,
         "Dietary Habits"                         : dietary,
         "Degree"                                 : degree,
         "Have you ever had suicidal thoughts ?"  : suicidal,
         "Work/Study Hours"                       : float(work_study_hrs),
         "Financial Stress"                       : float(financial_str),
-        "Family History of Mental Illness"       : family_hist
+        "Family History of Mental Illness"       : family_hist,
+        "Pressure"                               : float(pressure),           # Dikembalikan ke aslinya
+        "Role Satisfaction"                      : float(role_satisfaction),  # Dikembalikan ke aslinya
     }])
 
     # ── Prediksi ─────────────────────────────────────────
     try:
-        # Menggunakan pipeline langsung
         y_prob = pipeline.predict_proba(input_data)[0, 1]
         y_pred = pipeline.predict(input_data)[0]
         conf   = get_confidence(y_prob)
@@ -121,7 +117,6 @@ if st.button("🔍 Prediksi Sekarang", type="primary", use_container_width=True)
         # ── Tampilkan hasil ──────────────────────────────
         st.markdown("## 📊 Hasil Prediksi")
 
-        # Warna berdasarkan hasil
         if y_pred == 1:
             result_color = "#e74c3c" if y_prob >= 0.55 else "#e67e22"
             result_label = "⚠️ Terindikasi Depresi"
@@ -148,12 +143,10 @@ if st.button("🔍 Prediksi Sekarang", type="primary", use_container_width=True)
             unsafe_allow_html=True,
         )
 
-        # Progress bar probabilitas
         st.markdown("**Probabilitas Depresi**")
         st.progress(float(y_prob))
         st.caption(f"{y_prob:.1%} — semakin ke kanan semakin tinggi risiko")
 
-        # Penjelasan confidence
         st.markdown("---")
         st.markdown("#### 📌 Panduan Confidence Level")
         st.markdown("""
