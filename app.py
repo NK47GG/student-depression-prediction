@@ -4,8 +4,6 @@ Stefanus Loveniko Putra Sinory — Fast Track Bengkel Coding
 
 Cara jalankan:
     streamlit run app.py
-
-Pastikan 'model_depresi_final.pkl' ada di folder yang sama.
 """
 
 import streamlit as st
@@ -23,20 +21,21 @@ st.set_page_config(
 # ── Load model ─────────────────────────────────────────────
 @st.cache_resource
 def load_model():
-    artifact = joblib.load("model_depresi_terbaik.pkl")
-    return artifact
+    # Langsung me-return modelnya, karena yang di-dump adalah pipeline utuh
+    return joblib.load("model_depresi_terbaik.pkl")
 
 try:
-    artifact  = load_model()
-    pipeline  = artifact["pipeline"]
-    conf_fn   = artifact.get("confidence_fn", None)
+    pipeline = load_model()
 except FileNotFoundError:
-    st.error("❌ File 'model_depresi_final.pkl' tidak ditemukan. "
+    st.error("❌ File 'model_depresi_terbaik.pkl' tidak ditemukan. "
              "Pastikan file ada di folder yang sama dengan app.py.")
+    st.stop()
+except Exception as e:
+    st.error(f"❌ Terjadi kesalahan saat memuat model: {e}")
     st.stop()
 
 
-# ── Fungsi confidence level (fallback jika tidak ada di artifact) ───
+# ── Fungsi confidence level ─────────────────────────────────
 def get_confidence(prob: float) -> str:
     if prob >= 0.75:
         return "Tinggi — Depresi"
@@ -48,8 +47,6 @@ def get_confidence(prob: float) -> str:
         return "Sedang — Tidak Depresi"
     else:
         return "Tinggi — Tidak Depresi"
-
-confidence_fn = conf_fn if conf_fn is not None else get_confidence
 
 
 # ── UI ─────────────────────────────────────────────────────
@@ -88,35 +85,38 @@ st.markdown("---")
 if st.button("🔍 Prediksi Sekarang", type="primary", use_container_width=True):
 
     # ── Siapkan input DataFrame ───────────────────────────
-    # Feature engineering sama seperti di notebook
-    pressure         = acad_pressure + 0          # Work Pressure = 0 untuk Student
-    role_satisfaction = study_sat + 0             # Job Satisfaction = 0 untuk Student
-    cgpa_val         = np.nan if cgpa == 0.0 else cgpa
+    cgpa_val = np.nan if cgpa == 0.0 else cgpa
+    
+    # Asumsi dari kode sebelumnya: Jika Student, Work Pressure & Job Sat disamakan dengan Academics
+    work_pressure_val = acad_pressure if profession == "Working Professional" else 0.0
+    job_sat_val = study_sat if profession == "Working Professional" else 0.0
 
+    # PENTING: Nama dictionary keys HARUS SAMA PERSIS dengan kolom saat training!
     input_data = pd.DataFrame([{
         "Age"                                    : age,
         "Gender"                                 : gender,
         "City"                                   : city,
         "Profession"                             : profession,
         "Academic Pressure"                      : float(acad_pressure),
+        "Work Pressure"                          : float(work_pressure_val), 
         "CGPA"                                   : cgpa_val,
         "Study Satisfaction"                     : float(study_sat),
+        "Job Satisfaction"                       : float(job_sat_val),
         "Sleep Duration"                         : sleep_dur,
         "Dietary Habits"                         : dietary,
         "Degree"                                 : degree,
         "Have you ever had suicidal thoughts ?"  : suicidal,
         "Work/Study Hours"                       : float(work_study_hrs),
         "Financial Stress"                       : float(financial_str),
-        "Family History of Mental Illness"       : family_hist,
-        "Pressure"                               : float(pressure),
-        "Role Satisfaction"                      : float(role_satisfaction),
+        "Family History of Mental Illness"       : family_hist
     }])
 
     # ── Prediksi ─────────────────────────────────────────
     try:
+        # Menggunakan pipeline langsung
         y_prob = pipeline.predict_proba(input_data)[0, 1]
         y_pred = pipeline.predict(input_data)[0]
-        conf   = confidence_fn(y_prob)
+        conf   = get_confidence(y_prob)
 
         # ── Tampilkan hasil ──────────────────────────────
         st.markdown("## 📊 Hasil Prediksi")
@@ -173,4 +173,3 @@ if st.button("🔍 Prediksi Sekarang", type="primary", use_container_width=True)
 
     except Exception as e:
         st.error(f"❌ Error saat prediksi: {e}")
-        st.exception(e)
