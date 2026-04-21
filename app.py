@@ -68,8 +68,8 @@ with col1:
                                ["Less than 5 hours", "5-6 hours", "7-8 hours", "More than 8 hours"])
 
 with col2:
-    acad_pressure  = st.slider("Tekanan Akademis (1-5)", 1, 5, 3)
-    study_sat      = st.slider("Kepuasan Studi (1-5)",   1, 5, 3)
+    acad_pressure  = st.slider("Tekanan Akademis (0-5)", 0, 5, 3)
+    study_sat      = st.slider("Kepuasan Studi (0-5)",   0, 5, 3)
     work_study_hrs = st.slider("Jam Kerja/Belajar per hari", 1, 12, 6)
     financial_str  = st.slider("Stres Finansial (1-5)",  1, 5, 3)
     cgpa           = st.number_input("CGPA (0=tidak ada)", min_value=0.0, max_value=10.0,
